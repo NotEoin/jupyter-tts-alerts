@@ -1,0 +1,95 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: ${{ matrix.os }} / python ${{ matrix.python-version }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[test]"
+
+      - name: Test
+        # Runners have no speech engine and no audio hardware. The suite pins
+        # itself to a null engine anyway, and this makes that explicit.
+        env:
+          JUPYTER_TTS_ENGINE: none
+        run: pytest -q
+
+  build:
+    name: Build and check the distributions
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.x"
+
+      - name: Build
+        run: |
+          python -m pip install --upgrade pip build "twine>=7.0"
+          python -m build
+
+      - name: Check metadata
+        run: twine check --strict dist/*
+
+      - name: Confirm it installs and imports with nothing else present
+        run: |
+          python -m venv /tmp/clean
+          /tmp/clean/bin/pip install --quiet dist/*.whl
+          /tmp/clean/bin/python -c "
+          import sys, jupyter_tts_alerts
+          assert 'IPython' not in sys.modules, 'the import pulled in IPython'
+          print('imported', jupyter_tts_alerts.__version__, 'with no dependencies')
+          "
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: distributions
+          path: dist/
+
+  publish:
+    name: Publish to PyPI
+    # Tags only, and only once everything else is green.
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [test, build]
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/jupyter-tts-alerts
+    permissions:
+      # Trusted Publishing: this is what stands in for an API token. It also
+      # needs a matching publisher registered on PyPI, naming this repository,
+      # this workflow file, and the environment above.
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: distributions
+          path: dist/
+
+      - uses: pypa/gh-action-pypi-publish@release/v1
