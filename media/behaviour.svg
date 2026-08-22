@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1215" height="480" viewBox="0 0 1215 480" font-family="Liberation Sans, Helvetica, Arial, sans-serif">
+  <rect width="1215" height="480" fill="#ffffff"/>
+
+  <text x="30" y="48" font-size="23" font-weight="bold" fill="#1a1a1a">What it says, and when</text>
+  <text x="30" y="85" font-size="14.5" fill="#555555">Successful cells shorter than min_seconds (5s) stay silent. Errors always speak.</text>
+
+  <!-- quiet cells -->
+  <g>
+    <rect x="52" y="194" width="206" height="90" rx="8" fill="#ffffff" stroke="#d9dee4" stroke-width="1.6"/>
+    <text x="155" y="227" font-size="17" fill="#1a1a1a" text-anchor="middle">Cell 1</text>
+    <text x="155" y="257" font-size="14.5" fill="#666666" text-anchor="middle">1 second</text>
+    <text x="155" y="321" font-size="13.5" fill="#8a8a8a" text-anchor="middle">silent</text>
+  </g>
+  <g>
+    <rect x="277" y="194" width="206" height="90" rx="8" fill="#ffffff" stroke="#d9dee4" stroke-width="1.6"/>
+    <text x="380" y="227" font-size="17" fill="#1a1a1a" text-anchor="middle">Cell 2</text>
+    <text x="380" y="257" font-size="14.5" fill="#666666" text-anchor="middle">3 seconds</text>
+    <text x="380" y="321" font-size="13.5" fill="#8a8a8a" text-anchor="middle">silent</text>
+  </g>
+
+  <!-- a long cell -->
+  <g>
+    <rect x="502" y="194" width="206" height="90" rx="8" fill="#ffffff" stroke="#1668c1" stroke-width="2"/>
+    <text x="605" y="227" font-size="17" fill="#1a1a1a" text-anchor="middle">Cell 3</text>
+    <text x="605" y="257" font-size="14.5" fill="#666666" text-anchor="middle">6 minutes 20 seconds</text>
+    <path d="M605 292 L605 322" stroke="#1668c1" stroke-width="1.8"/>
+    <path d="M605 331 l-5.5 -10 h11 Z" fill="#1668c1"/>
+    <rect x="502" y="333" width="206" height="72" rx="6" fill="#eaf1fb"/>
+    <text x="605" y="362" font-size="14" font-style="italic" fill="#1f5fbf" text-anchor="middle">"Cell 3. 6 minutes 20 seconds."</text>
+    <text x="605" y="385" font-size="13" fill="#7089ab" text-anchor="middle">the In [n] number, so you can find it</text>
+  </g>
+
+  <!-- a failing cell -->
+  <g>
+    <rect x="727" y="194" width="206" height="90" rx="8" fill="#ffffff" stroke="#c0392b" stroke-width="2"/>
+    <text x="830" y="227" font-size="17" fill="#c0392b" text-anchor="middle">Cell 4</text>
+    <text x="830" y="257" font-size="14.5" fill="#666666" text-anchor="middle">exception raised</text>
+    <path d="M830 292 L830 322" stroke="#c0392b" stroke-width="1.8"/>
+    <path d="M830 331 l-5.5 -10 h11 Z" fill="#c0392b"/>
+    <rect x="727" y="333" width="206" height="72" rx="6" fill="#fdeceb"/>
+    <text x="830" y="362" font-size="14" font-style="italic" fill="#c0392b" text-anchor="middle">"Error in cell 4. Value error."</text>
+    <text x="830" y="385" font-size="13" fill="#b07f79" text-anchor="middle">second voice, whatever the runtime</text>
+  </g>
+
+  <!-- the last cell -->
+  <g>
+    <rect x="952" y="194" width="206" height="90" rx="8" fill="#ffffff" stroke="#1668c1" stroke-width="2"/>
+    <text x="1055" y="227" font-size="17" fill="#1a1a1a" text-anchor="middle">Cell 5</text>
+    <text x="1055" y="257" font-size="14.5" fill="#666666" text-anchor="middle">2 seconds</text>
+    <text x="1055" y="180" font-size="13" fill="#8a8a8a" text-anchor="middle" font-family="DejaVu Sans Mono, monospace"># tts: final</text>
+    <path d="M1055 292 L1055 322" stroke="#1668c1" stroke-width="1.8"/>
+    <path d="M1055 331 l-5.5 -10 h11 Z" fill="#1668c1"/>
+    <rect x="952" y="333" width="206" height="72" rx="6" fill="#eaf1fb"/>
+    <text x="1055" y="362" font-size="14" font-style="italic" fill="#1f5fbf" text-anchor="middle">"Cell 5. 2 seconds."</text>
+    <text x="1055" y="385" font-size="13" fill="#7089ab" text-anchor="middle">then: the whole-notebook total</text>
+  </g>
+
+  <text x="30" y="447" font-size="13" fill="#8a8a8a">Every line is a template: configure(phrases=...) rewrites any of them, and # tts: your own sentence overrides one cell.</text>
+</svg>
