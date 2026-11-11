@@ -46,14 +46,15 @@ class Speaker:
         #: Set to pin one engine and skip detection entirely -- used by the
         #: tests, and by anyone driving a synthesiser we do not ship support for.
         self._pinned = engine
-        self._queue: "queue.Queue[Optional[Command]]" = queue.Queue(MAX_QUEUED)
+        #: Jobs as ``(epoch, command)``, stamped when submitted; None stops the worker.
+        self._queue: "queue.Queue[Optional[Tuple[int, Command]]]" = queue.Queue(MAX_QUEUED)
         self._thread: Optional[threading.Thread] = None
         self._lock = threading.Lock()
         self._process: Optional[subprocess.Popen] = None
         self._closed = False
-        #: Bumped by cancel(). The worker samples it when it picks a job up,
-        #: so an utterance that was cancelled during the window between being
-        #: dequeued and being spawned can still be abandoned.
+        #: Bumped by cancel(). Every job is stamped with it when submitted, so
+        #: a job cancelled at any point before its process starts, including
+        #: just after the worker dequeued it, is abandoned.
         self._epoch = 0
         self._engine: Optional[Engine] = None
         self._engine_key: object = object()
@@ -218,9 +219,11 @@ class Speaker:
         if self._closed:
             return False
         self._ensure_thread()
+        with self._lock:
+            stamp = self._epoch
         for _ in range(2):
             try:
-                self._queue.put_nowait(command)
+                self._queue.put_nowait((stamp, command))
             except queue.Full:
                 # Make room by discarding the oldest thing still waiting: if
                 # announcements are arriving faster than they can be spoken,
@@ -247,12 +250,11 @@ class Speaker:
 
     def _worker(self) -> None:
         while True:
-            command = self._queue.get()
-            with self._lock:
-                epoch = self._epoch
+            job = self._queue.get()
             try:
-                if command is None:
+                if job is None:
                     return
+                epoch, command = job
                 self._run(command, epoch=epoch)
             except Exception as exc:  # never let the worker die
                 self._warn(f"TTS failed: {exc}")
@@ -290,7 +292,7 @@ class Speaker:
             if not stale:
                 self._process = process
         if stale:
-            # Cancelled between being dequeued and being started.
+            # Cancelled after it was submitted, before it was started.
             self._reap(process)
             return
 

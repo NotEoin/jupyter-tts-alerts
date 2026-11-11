@@ -148,7 +148,7 @@ def test_when_the_backlog_is_trimmed_it_is_the_oldest_that_goes(monkeypatch, log
     monkeypatch.setattr(talker, "_ensure_thread", lambda: None)  # nothing drains
     for i in range(5):
         talker.speak(f"message {i}")
-    queued = [talker._queue.get_nowait().argv[-1] for _ in range(talker._queue.qsize())]
+    queued = [talker._queue.get_nowait()[1].argv[-1] for _ in range(talker._queue.qsize())]
     assert queued == ["normal:message 3", "normal:message 4"]
 
 
@@ -221,3 +221,21 @@ def test_unknown_engine_name_is_reported_once(capsys):
     assert talker.engine is None
     assert talker.speak("hello") is False
     assert "unknown engine" in capsys.readouterr().err
+
+
+def test_a_cancel_just_after_dequeue_is_not_lost(log):
+    """Regression: the epoch was sampled after get(), so this cancel went unseen."""
+    talker = Speaker(engine=RecordingEngine(log))
+    real_get = talker._queue.get
+
+    def get_then_cancel(*args, **kwargs):
+        item = real_get(*args, **kwargs)
+        if item is not None:
+            talker.cancel()
+        return item
+
+    talker._queue.get = get_then_cancel
+    talker.speak("should not be spoken")
+    assert talker.wait(10) is True
+    assert not log.exists() or log.read_text() == ""
+    talker.close(timeout=2)
