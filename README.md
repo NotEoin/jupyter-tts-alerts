@@ -126,7 +126,7 @@ configure(min_seconds=60, volume=80, notify=True)
 | `announce_interrupts` | `False` | Announce cells you stopped yourself |
 | `engine` | auto | `espeak-ng`, `spd-say`, `say`, `sapi`, `termux`, or `none` |
 | `voice` / `error_voice` | engine's choice | See `%tts voices` |
-| `volume` | `50` | 0 to 100, where **50 is the engine's own normal level** |
+| `volume` | `50` | 0 to 100, where **50 is the engine's own normal level**; no effect on Termux |
 | `rate` | `0` | -100 to 100, relative to the engine's normal speed |
 | `notify` | `False` | Also raise a desktop notification |
 | `banner` | `True` | Print the one-line summary on import |

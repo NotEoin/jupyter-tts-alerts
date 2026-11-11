@@ -324,3 +324,17 @@ def test_espeak_lists_each_voice_once_and_no_variant_files(monkeypatch):
     engine = EspeakEngine("espeak-ng")
     monkeypatch.setattr(engine, "_probe", lambda args: listing)
     assert engine.voices() == ["en-gb", "en-uk"]
+
+
+def test_termux_applies_the_rate():
+    """Regression: `configure(rate=...)` was ignored on Termux."""
+    engine = TermuxEngine("termux-tts-speak")
+    rates = [engine.speak_command("hi", None, 50, rate).argv for rate in (-100, 0, 100)]
+    assert [argv[argv.index("-r") + 1] for argv in rates] == ["0.50", "1.00", "2.00"]
+
+
+def test_termux_failures_sound_different():
+    engine = TermuxEngine("termux-tts-speak")
+    normal, alert = engine.default_voices()
+    pitches = [engine.speak_command("hi", voice, 50, 0).argv for voice in (normal, alert)]
+    assert pitches[0][pitches[0].index("-p") + 1] != pitches[1][pitches[1].index("-p") + 1]

@@ -387,11 +387,25 @@ class TermuxEngine(Engine):
     def install_hint(cls) -> str:
         return "pkg install termux-api"
 
+    #: termux-tts-speak has no second voice to offer, so the two voices are
+    #: pitches (``-p``, where 1.0 is normal) that are easy to tell apart.
+    PITCHES = {"normal": "1.00", "low": "0.75", "high": "1.30"}
+
     def speak_command(self, text: str, voice: Optional[str], volume: int,
                       rate: int) -> Command:
         # Reads the message on stdin, so nothing needs escaping and there is
-        # no argv to confuse. Volume and rate are not exposed by the wrapper.
-        return Command([self.path], stdin=sanitise(text))
+        # no argv to confuse. The wrapper exposes no volume, only a stream.
+        # Its -r is a multiplier with 1.0 as normal: -100..100 maps to 0.5..2.
+        argv = [self.path, "-r", f"{2 ** (rate / 100):.2f}"]
+        if voice in self.PITCHES:
+            argv += ["-p", self.PITCHES[voice]]
+        return Command(argv, stdin=sanitise(text))
+
+    def voices(self) -> List[str]:
+        return list(self.PITCHES)
+
+    def default_voices(self) -> Tuple[Optional[str], Optional[str]]:
+        return "normal", "low"
 
 
 class NullEngine(Engine):
