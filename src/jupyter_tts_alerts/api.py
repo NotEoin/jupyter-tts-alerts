@@ -168,6 +168,27 @@ def test() -> "Status":
 class Status:
     """A readable snapshot of what the package thinks it is doing."""
 
+    # Declared so that type checkers see the fields `__init__` fills in.
+    version: str
+    engine: Optional[str]
+    engine_path: Optional[str]
+    engine_error: Optional[str]
+    voice: Optional[str]
+    error_voice: Optional[str]
+    volume: int
+    rate: int
+    min_seconds: float
+    min_error_seconds: float
+    announce_cells: bool
+    announce_start: bool
+    announce_errors: bool
+    announce_interrupts: bool
+    notify: bool
+    notifier: Optional[str]
+    enabled: bool
+    attached: bool
+    remote_reasons: List[str]
+
     def __init__(self, data: Dict[str, Any]) -> None:
         self.__dict__.update(data)
         self._data = data

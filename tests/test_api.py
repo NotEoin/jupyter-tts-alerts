@@ -342,3 +342,11 @@ def test_test_honours_the_master_switch(spoken, monkeypatch, capsys):
     api.test()
     assert spoken == [] and notified == []
     assert "announcements are off" in capsys.readouterr().out
+
+
+def test_every_status_field_is_declared_for_type_checkers():
+    """Regression: fields set through __dict__ failed mypy in a py.typed package."""
+    import typing
+
+    declared = typing.get_type_hints(api.Status)
+    assert set(api.status().as_dict()) <= set(declared)
