@@ -51,26 +51,27 @@ def enable(shell: Any = None, banner: Optional[bool] = None,
             "jupyter-tts-alerts needs a running IPython kernel; "
             "import it from inside a notebook or IPython session"
         )
+    from .magics import register_magics
+
     existing = getattr(shell, _ATTR, None)
     # Arming automatically when we are already armed is a no-op: `import`
-    # followed by `%load_ext` must not greet you twice. Asking explicitly
-    # always confirms itself, however many times you ask.
-    already_running = (
-        not activate and existing is not None and get_config().enabled
-    )
+    # followed by `%load_ext` must not greet you twice, nor restart the
+    # notebook stopwatch or forget the cell that is running. Asking
+    # explicitly always confirms itself, however many times you ask.
+    if not activate and existing is not None and existing.attached and get_config().enabled:
+        register_magics(shell)
+        return existing
     if existing is not None:
         existing.detach()
     announcer = Announcer().attach(shell)
     setattr(shell, _ATTR, announcer)
-    from .magics import register_magics
-
     register_magics(shell)
     config = get_config()
     if activate:
         config.enabled = True
     # Everything below is a noise the package makes. A silenced package makes
     # none of them, banner included.
-    if not config.enabled or already_running:
+    if not config.enabled:
         return announcer
     if config.banner if banner is None else banner:
         print(banner_text())

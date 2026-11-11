@@ -304,3 +304,17 @@ def test_enable_prints_the_banner_when_asked(shell, capsys):
     api.enable(shell, banner=True)
     assert "jupyter-tts-alerts" in capsys.readouterr().out
     api.disable(shell)
+
+
+def test_load_ext_after_import_keeps_the_notebook_stopwatch(shell):
+    """Regression: the second, automatic enable replaced the announcer."""
+    api.disable(shell)
+    configure(enabled=True)
+    first = api.enable(shell, banner=False, activate=False)
+    first.notebook_start -= 100
+    started = first.notebook_start
+    second = api.enable(shell, banner=False, activate=False)
+    assert second is first
+    assert second.notebook_start == started
+    assert api.is_enabled(shell) is True
+    api.disable(shell)
