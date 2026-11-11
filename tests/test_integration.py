@@ -359,3 +359,25 @@ def test_a_failing_espeak_is_reported_with_its_own_message(tmp_path, capsys):
     assert "exited with status 1" in err
     assert "voice does not exist" in err
     talker.close(timeout=5)
+
+
+@pytest.mark.skipif(sys.platform.startswith("win"), reason="process groups are POSIX")
+def test_speech_runs_outside_the_kernels_process_group(log):
+    """Regression: kernel shutdown signals its group, killing the final announcement."""
+
+    class GroupReporter(Engine):
+        name = "group-reporter"
+
+        SCRIPT = (
+            "import os, pathlib, sys; "
+            "pathlib.Path(sys.argv[1]).write_text(str(os.getpgrp()))"
+        )
+
+        def speak_command(self, text, voice, volume, rate):
+            return Command([sys.executable, "-c", self.SCRIPT, str(log)])
+
+    talker = Speaker(engine=GroupReporter(sys.executable))
+    talker.speak("which group am I in")
+    assert talker.wait(30) is True
+    assert int(log.read_text()) != os.getpgrp()
+    talker.close(timeout=5)

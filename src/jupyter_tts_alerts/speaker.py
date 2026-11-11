@@ -302,6 +302,10 @@ class Speaker:
                 env=env,
                 encoding="utf-8" if wants_stdin else None,
                 errors="replace" if wants_stdin else None,
+                # Out of the kernel's process group: at shutdown Jupyter and
+                # ipykernel signal that group, which would kill the very
+                # announcement a batch run ends on. cancel() still stops it.
+                start_new_session=os.name == "posix",
             )
         except OSError as exc:
             self._warn(f"could not run {command.argv[0]!r}: {exc}")
