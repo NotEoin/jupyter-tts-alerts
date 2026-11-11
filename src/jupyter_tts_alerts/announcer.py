@@ -217,6 +217,10 @@ class Announcer:
             # matched: drop the newest, or the stack would keep it forever and
             # every later cell would look like a nested one and stay silent.
             self._drop_newest()
+            if not self._stack:
+                # Nothing is in flight any more, so an inner failure recorded
+                # on the way belongs to no cell that is still to finish.
+                self._nested_error = None
             return
         if self._stack:
             # An inner execution of a nested run_cell. The cell the user
@@ -225,8 +229,10 @@ class Announcer:
             # still matters, though -- `%%capture` swallows it.
             self._nested_error = self._nested_error or _error_of(result)
             return
+        # The outermost cell has finished. An inner failure belongs to it and
+        # to no later cell, whichever of the returns below this cell takes.
+        nested, self._nested_error = self._nested_error, None
         if not config.enabled:
-            self._nested_error = None
             return
 
         directives = parse_directives(getattr(info, "raw_cell", "") or "")
@@ -235,8 +241,7 @@ class Announcer:
 
         elapsed = max(0.0, time.monotonic() - started)
         total = max(0.0, time.monotonic() - self.notebook_start)
-        error = _error_of(result) or self._nested_error
-        self._nested_error = None
+        error = _error_of(result) or nested
         cell = getattr(result, "execution_count", None)
         fields = describe_fields(elapsed, cell, error, total)
 

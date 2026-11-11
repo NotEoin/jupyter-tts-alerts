@@ -262,3 +262,25 @@ def test_reset_restarts_the_notebook_stopwatch(announcer, speaker):
     announcer.reset()
     run_cell(announcer, source="# tts: final\nwork()", elapsed=0.1)
     assert speaker.lines[-1] == "Notebook complete. Total runtime less than a second."
+
+
+def test_a_quiet_cells_inner_failure_does_not_leak_into_the_next_cell(announcer, speaker):
+    """Regression: `# tts: off` returned before clearing the nested error."""
+    outer, inner = FakeInfo("%%capture\n# tts: off\nboom()"), FakeInfo("boom()")
+    announcer.pre_run_cell(outer)
+    announcer.pre_run_cell(inner)
+    announcer.post_run_cell(FakeResult(info=inner, execution_count=9, error=ValueError()))
+    announcer.post_run_cell(FakeResult(info=outer, execution_count=8))
+    run_cell(announcer, elapsed=1.0, execution_count=10)
+    assert speaker.said == []
+
+
+def test_an_unpaired_post_does_not_leave_an_inner_failure_behind(announcer, speaker):
+    """Regression: a None result (a cancelled async cell) kept the nested error."""
+    outer, inner = FakeInfo("outer()"), FakeInfo("boom()")
+    announcer.pre_run_cell(outer)
+    announcer.pre_run_cell(inner)
+    announcer.post_run_cell(FakeResult(info=inner, execution_count=9, error=ValueError()))
+    announcer.post_run_cell(None)
+    run_cell(announcer, elapsed=1.0, execution_count=10)
+    assert speaker.said == []
