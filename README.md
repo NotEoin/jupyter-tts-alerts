@@ -74,6 +74,10 @@ does the same thing if you prefer magics.) From then on:
 - Longer cells: *"Cell 12. 6 minutes 20 seconds."*
 - Errors: announced immediately, in the other voice: *"Error in cell 12. Value error."*
 
+**Want to hear it first?** [`notebooks/example.ipynb`](https://github.com/NotEoin/jupyter-tts-alerts/blob/main/notebooks/example.ipynb)
+is a fifteen-second stand-in for a long run: load, train, save, then a crash, with each step
+saying what you should hear.
+
 **Not sure it's working?** [`notebooks/verify-alerts.ipynb`](https://github.com/NotEoin/jupyter-tts-alerts/blob/main/notebooks/verify-alerts.ipynb) walks
 through every feature and tells you what you should hear at each step.
 
