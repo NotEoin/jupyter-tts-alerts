@@ -148,7 +148,7 @@ def test_when_the_backlog_is_trimmed_it_is_the_oldest_that_goes(monkeypatch, log
     monkeypatch.setattr(talker, "_ensure_thread", lambda: None)  # nothing drains
     for i in range(5):
         talker.speak(f"message {i}")
-    queued = [talker._queue.get_nowait()[1].argv[-1] for _ in range(talker._queue.qsize())]
+    queued = [talker._queue.get_nowait()[1]().argv[-1] for _ in range(talker._queue.qsize())]
     assert queued == ["normal:message 3", "normal:message 4"]
 
 
@@ -239,3 +239,33 @@ def test_a_cancel_just_after_dequeue_is_not_lost(log):
     assert talker.wait(10) is True
     assert not log.exists() or log.read_text() == ""
     talker.close(timeout=2)
+
+
+def test_default_voices_are_found_off_the_kernel_thread(log):
+    """Regression: the first announcement listed voices on the importing thread."""
+    import threading
+
+    seen = []
+
+    class Listing(RecordingEngine):
+        def default_voices(self):
+            seen.append(threading.current_thread().name)
+            return super().default_voices()
+
+    talker = Speaker(engine=Listing(log))
+    assert talker.speak("hello") is True
+    assert talker.wait(10) is True
+    assert seen == ["jupyter-tts-alerts"]
+    talker.close(timeout=2)
+
+
+def test_settings_in_force_when_speaking_are_the_ones_used(monkeypatch, log):
+    from jupyter_tts_alerts.config import configure
+
+    talker = Speaker(engine=RecordingEngine(log))
+    monkeypatch.setattr(talker, "_ensure_thread", lambda: None)  # nothing drains yet
+    configure(voice="first")
+    talker.speak("hello")
+    configure(voice="second")
+    _, job = talker._queue.get_nowait()
+    assert "first" in " ".join(job().argv)

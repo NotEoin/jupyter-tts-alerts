@@ -14,10 +14,10 @@ import queue
 import subprocess
 import sys
 import threading
-from typing import Optional, Set, Tuple
+from typing import Callable, Optional, Set, Tuple, Union
 
 from .config import get_config
-from .engines import Command, Engine, detect_engine, install_hints, load_engine
+from .engines import Command, Engine, NullEngine, detect_engine, install_hints, load_engine
 from .notify import Notifier, detect_notifier
 
 #: Give up on a single utterance after this long -- a wedged synthesiser must
@@ -30,6 +30,8 @@ SPEAK_TIMEOUT = 60.0
 #: is full the *oldest* pending item is dropped, because the newest is
 #: always the one worth hearing.
 MAX_QUEUED = 4
+#: What the worker runs: a ready command, or a builder it calls first.
+Job = Union[Command, Callable[[], Command]]
 #: Problems already reported. Process-wide, so a reload does not re-nag.
 _WARNED: Set[str] = set()
 
@@ -46,8 +48,9 @@ class Speaker:
         #: Set to pin one engine and skip detection entirely -- used by the
         #: tests, and by anyone driving a synthesiser we do not ship support for.
         self._pinned = engine
-        #: Jobs as ``(epoch, command)``, stamped when submitted; None stops the worker.
-        self._queue: "queue.Queue[Optional[Tuple[int, Command]]]" = queue.Queue(MAX_QUEUED)
+        #: Jobs as ``(epoch, command or builder)``, stamped when submitted;
+        #: None stops the worker.
+        self._queue: "queue.Queue[Optional[Tuple[int, Job]]]" = queue.Queue(MAX_QUEUED)
         self._thread: Optional[threading.Thread] = None
         self._lock = threading.Lock()
         self._process: Optional[subprocess.Popen] = None
@@ -122,22 +125,28 @@ class Speaker:
 
     # -- public API --
     def speak(self, text: str, alert: bool = False) -> bool:
-        """Queue *text*. Returns False if there is nothing to speak it with."""
+        """Queue *text*. Returns False if there is nothing to speak it with.
+
+        The command itself is built on the worker thread, because finding the
+        engine's default voices can mean a listing subprocess, and that must
+        not hold up the kernel. The settings are taken now, so the ones in
+        force when the announcement was made are the ones it uses.
+        """
         engine = self.engine
-        if engine is None or not str(text).strip():
+        if engine is None or engine.name == NullEngine.name or not str(text).strip():
             return False
         config = get_config()
-        try:
-            command = engine.speak_command(
-                text, self.voices_for(alert), config.volume, config.rate
-            )
-        except Exception as exc:  # noqa: BLE001 - speak() runs inside post_run_cell, where a
-            # raise prints a callback traceback after every later cell
-            self._warn(f"could not build a speech command: {exc}")
-            return False
-        if not command.argv:
-            return False
-        return self._submit(command)
+        chosen = config.error_voice if alert else config.voice
+        volume, rate = config.volume, config.rate
+
+        def build() -> Command:
+            voice = chosen
+            if not voice:
+                normal, warning = self._default_voices(engine)
+                voice = warning if alert else normal
+            return engine.speak_command(text, voice, volume, rate)
+
+        return self._submit(build)
 
     def notify(self, title: str, body: str, urgent: bool = False) -> bool:
         """Queue a desktop notification behind whatever is already speaking."""
@@ -215,7 +224,7 @@ class Speaker:
             thread.join(timeout)
 
     # -- plumbing --
-    def _submit(self, command: Command) -> bool:
+    def _submit(self, command: Job) -> bool:
         if self._closed:
             return False
         self._ensure_thread()
@@ -254,12 +263,22 @@ class Speaker:
             try:
                 if job is None:
                     return
-                epoch, command = job
-                self._run(command, epoch=epoch)
+                epoch, work = job
+                command = self._build(work) if callable(work) else work
+                if command is not None and command.argv:
+                    self._run(command, epoch=epoch)
             except Exception as exc:  # never let the worker die
                 self._warn(f"TTS failed: {exc}")
             finally:
                 self._queue.task_done()
+
+    def _build(self, build: Callable[[], Command]) -> Optional[Command]:
+        """Run a deferred speech-command builder, reporting a failure once."""
+        try:
+            return build()
+        except Exception as exc:  # noqa: BLE001 - a bad engine must not kill the worker
+            self._warn(f"could not build a speech command: {exc}")
+            return None
 
     def _run(self, command: Command, timeout: Optional[float] = None,
              epoch: Optional[int] = None) -> None:
