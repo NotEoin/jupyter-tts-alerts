@@ -310,3 +310,17 @@ def test_preference_order_is_platform_appropriate(monkeypatch, system, first):
 @pytest.mark.skipif(platform.system() != "Linux", reason="Linux engine ordering")
 def test_linux_falls_back_to_speech_dispatcher():
     assert SpdSayEngine in preference_order()
+
+
+def test_espeak_lists_each_voice_once_and_no_variant_files(monkeypatch):
+    """Regression: `variant` rows were offered, and `espeak-ng -v variant` crashes."""
+    listing = (
+        "Pty Language  Age/Gender VoiceName  File  Other Languages\n"
+        " 2  en-gb           --/M      English_(Great_Britain) gmw/en               (en 2)\n"
+        " 3  en-uk  --/M  english-mb-en1  mb/mb-en1  (en-gb 3)(en 2)\n"
+        " 5  en-gb           --/M      English_(GB)_alt   gmw/en-GB-x-alt\n"
+        " 5  variant         --/M      Storm              !v/Storm             (en-us 5)\n"
+    )
+    engine = EspeakEngine("espeak-ng")
+    monkeypatch.setattr(engine, "_probe", lambda args: listing)
+    assert engine.voices() == ["en-gb", "en-uk"]

@@ -187,8 +187,12 @@ class EspeakEngine(Engine):
         found = []
         for line in out.splitlines()[1:]:
             parts = line.split()
-            if len(parts) >= 4:
-                found.append(parts[1])          # the Language column
+            # Variant files are listed under the language "variant", and
+            # `espeak-ng -v variant` segfaults (1.52.0); they are reached as
+            # +suffixes instead. Languages repeat across voice files.
+            if len(parts) < 4 or parts[1] == "variant" or parts[1] in found:
+                continue
+            found.append(parts[1])              # the Language column
         return found
 
     def default_voices(self) -> Tuple[Optional[str], Optional[str]]:
