@@ -209,7 +209,7 @@ def test_cancel_reaches_a_pinned_engines_cancel_command(log):
 
 
 def test_a_failing_command_is_reported_only_when_it_asked_to_be(capsys):
-    """Speech engines lie about exit status; notifications do not."""
+    """Only commands whose exit status means something report it."""
     failing = [sys.executable, "-c", "raise SystemExit(3)"]
 
     class Quiet(Engine):
@@ -338,4 +338,24 @@ def test_cancelling_a_command_that_reports_failures_reports_nothing(capsys):
     talker.cancel()
     assert talker.wait(20) is True
     assert "exited with status" not in capsys.readouterr().err
+    talker.close(timeout=5)
+
+
+def test_a_failing_espeak_is_reported_with_its_own_message(tmp_path, capsys):
+    """Regression: `configure(voice="nonsense")` on espeak-ng was simply silent."""
+    if sys.platform.startswith("win"):
+        pytest.skip("shell shims are not executable on Windows")
+    from jupyter_tts_alerts.engines import EspeakEngine
+
+    fake = tmp_path / "espeak-ng"
+    fake.write_text(
+        "#!/bin/sh\necho 'Error: The specified espeak-ng voice does not exist.' >&2\nexit 1\n"
+    )
+    fake.chmod(0o755)
+    talker = Speaker(engine=EspeakEngine(str(fake)))
+    talker.speak("hello")
+    assert talker.wait(20) is True
+    err = capsys.readouterr().err
+    assert "exited with status 1" in err
+    assert "voice does not exist" in err
     talker.close(timeout=5)

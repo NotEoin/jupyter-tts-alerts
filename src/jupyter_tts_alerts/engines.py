@@ -61,10 +61,11 @@ class Command(NamedTuple):
     argv: List[str]
     stdin: Optional[str] = None
     env: Optional[Dict[str, str]] = None
-    #: Speech engines lie about their exit status -- spd-say reports success
-    #: for an invalid voice, an invalid volume and an unknown synthesis voice
-    #: alike -- so a non-zero exit is only worth reporting where it means
-    #: something. Notifications set this; speech does not.
+    #: Some speech engines lie about their exit status -- spd-say reports
+    #: success for an invalid voice, an invalid volume and an unknown
+    #: synthesis voice alike -- so a non-zero exit is only reported where it
+    #: means something: notifications, and espeak, which exits 1 for a voice
+    #: it does not have.
     warn_on_failure: bool = False
 
 
@@ -180,7 +181,7 @@ class EspeakEngine(Engine):
         if voice:
             argv += ["-v", voice]
         argv += ["--", sanitise(text)]
-        return Command(argv)
+        return Command(argv, warn_on_failure=True)
 
     def voices(self) -> List[str]:
         out = self._probe(["--voices=en"]) or self._probe(["--voices"])

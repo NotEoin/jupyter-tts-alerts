@@ -278,7 +278,8 @@ class Speaker:
                 command.argv,
                 stdin=subprocess.PIPE if wants_stdin else subprocess.DEVNULL,
                 stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
+                # Kept only where a failure is reported, to say what went wrong.
+                stderr=subprocess.PIPE if command.warn_on_failure else subprocess.DEVNULL,
                 env=env,
                 encoding="utf-8" if wants_stdin else None,
                 errors="replace" if wants_stdin else None,
@@ -297,8 +298,9 @@ class Speaker:
             return
 
         cancelled = False
+        errors: object = None
         try:
-            process.communicate(input=command.stdin, timeout=timeout)
+            _, errors = process.communicate(input=command.stdin, timeout=timeout)
         except subprocess.TimeoutExpired:
             self._warn(f"{command.argv[0]!r} timed out and was stopped")
         finally:
@@ -318,6 +320,7 @@ class Speaker:
         if command.warn_on_failure and process.returncode and not (killed or cancelled):
             self._warn(
                 f"{command.argv[0]!r} exited with status {process.returncode}"
+                + _last_line(errors)
             )
 
     def _reap(self, process: subprocess.Popen) -> bool:
@@ -345,6 +348,14 @@ class Speaker:
             return
         _WARNED.add(message)
         print(f"jupyter-tts-alerts: {message}", file=sys.stderr)
+
+
+def _last_line(output: object) -> str:
+    """``": <the last non-empty line>"`` of a child's stderr, or ``""``."""
+    if isinstance(output, bytes):
+        output = output.decode("utf-8", "replace")
+    lines = [line.strip() for line in str(output or "").splitlines() if line.strip()]
+    return f": {lines[-1]}" if lines else ""
 
 
 _speaker: Optional[Speaker] = None
