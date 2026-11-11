@@ -208,6 +208,13 @@ class Announcer:
             return
 
         started = self._take(info) if info is not None else None
+        if started is None and info is not None and not (
+            getattr(info, "raw_cell", "") or ""
+        ).strip():
+            # A blank cell: IPython returns before firing pre for it, so there
+            # is nothing of its own to drop. Dropping anyway would throw away
+            # the cell around it when it was run from inside another cell.
+            return
         if started is None:
             # A post event we cannot pair. Either no pre fired for it -- an
             # empty cell, which IPython returns from before triggering pre --

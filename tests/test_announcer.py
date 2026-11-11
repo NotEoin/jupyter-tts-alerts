@@ -284,3 +284,12 @@ def test_an_unpaired_post_does_not_leave_an_inner_failure_behind(announcer, spea
     announcer.post_run_cell(None)
     run_cell(announcer, elapsed=1.0, execution_count=10)
     assert speaker.said == []
+
+
+def test_a_blank_nested_run_cell_keeps_the_outer_cells_stopwatch(announcer, speaker):
+    """Regression: the blank cell's unpaired post dropped the outer cell instead."""
+    outer = FakeInfo("get_ipython().run_cell('')\nboom()")
+    announcer.pre_run_cell(outer)
+    announcer.post_run_cell(FakeResult(info=FakeInfo("   "), execution_count=None))
+    announcer.post_run_cell(FakeResult(info=outer, execution_count=8, error=ValueError()))
+    assert speaker.alerts == ["Error in cell 8. Value error."]
