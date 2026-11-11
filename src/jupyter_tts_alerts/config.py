@@ -166,6 +166,8 @@ def _did_you_mean(key: str, known: Dict[str, Any]) -> str:
 def _coerce(key: str, value: Any, annotation: Any) -> Any:
     """Nudge a value into the field's type; strings come from the environment."""
     text = str(annotation)
+    if key == "engine" and isinstance(value, str) and value.strip().lower() == "auto":
+        return None  # the README's name for auto-detection, from any surface
     if "bool" in text:
         return _as_bool(key, value)
     if "float" in text:

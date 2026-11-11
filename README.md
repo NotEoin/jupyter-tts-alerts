@@ -152,6 +152,7 @@ literally rather than raising, so a typo costs you one odd-sounding announcement
 %tts test                 say a line in each voice
 %tts say <text>           say something now
 %tts set min_seconds=60   change a setting
+%tts set volume=default   put a setting back (engine=auto also re-detects)
 %tts voices               voices this engine accepts
 %tts reset                restart the whole-notebook stopwatch
 %tts engines              engine names accepted by `set engine=`

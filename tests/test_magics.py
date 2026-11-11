@@ -55,3 +55,35 @@ def test_help_engines_and_voices_print_without_raising(hooked, capsys):
 def test_the_magic_is_documented_for_the_question_mark_help(hooked):
     shell, _ = hooked
     assert USAGE in shell.magics_manager.magics["line"]["tts"].__doc__
+
+
+def test_set_default_restores_any_setting(hooked):
+    shell, _ = hooked
+    shell.run_line_magic("tts", "set volume=80 min_seconds=60 notify=yes")
+    shell.run_line_magic("tts", "set volume=default min_seconds=default notify=default")
+    config = api.get_config()
+    assert (config.volume, config.min_seconds, config.notify) == (50, 5.0, False)
+
+
+def test_set_none_on_a_setting_that_cannot_be_empty_says_so(hooked, capsys):
+    """Regression: `volume=none` printed a raw int() TypeError."""
+    shell, _ = hooked
+    shell.run_line_magic("tts", "set volume=none")
+    assert "volume has no 'none' value" in capsys.readouterr().out
+    assert api.get_config().volume == 50
+
+
+def test_set_enabled_none_does_not_switch_announcements_on(hooked, capsys):
+    shell, _ = hooked
+    api.configure(enabled=False)
+    shell.run_line_magic("tts", "set enabled=none")
+    assert api.get_config().enabled is False
+
+
+def test_set_engine_auto_or_default_means_detect(hooked):
+    """Regression: the unknown-engine error advised `None`, which stored 'None'."""
+    shell, _ = hooked
+    for word in ("auto", "AUTO", "default"):
+        api.configure(engine="none")
+        shell.run_line_magic("tts", f"set engine={word}")
+        assert api.get_config().engine is None

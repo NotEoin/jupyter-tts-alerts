@@ -135,3 +135,8 @@ def test_env_flag_reads_the_prefix(monkeypatch):
     assert env_flag("AUTOSTART", True) is False
     monkeypatch.delenv("JUPYTER_TTS_AUTOSTART")
     assert env_flag("AUTOSTART", True) is True
+
+
+def test_auto_in_the_environment_means_detect_the_engine():
+    apply_environment({"JUPYTER_TTS_ENGINE": "auto"})
+    assert get_config().engine is None

@@ -444,7 +444,7 @@ def load_engine(name: str) -> Engine:
         engine_cls = REGISTRY[name]
     except KeyError:
         raise ValueError(
-            "unknown engine %r (choose from %s, or None to auto-detect)"
+            "unknown engine %r (choose from %s, or 'auto' to auto-detect)"
             % (name, ", ".join(sorted(REGISTRY)))
         ) from None
     engine = engine_cls.find()
