@@ -32,6 +32,7 @@ Cell directives (in a comment anywhere in the cell, on its own line or after cod
   # tts: always           announce it however fast it was
   # tts: final            also announce the total notebook runtime
   # tts: <a sentence>     say that instead of the usual phrasing
+  # tts: say <sentence>   the same, for a sentence that is a keyword (say done)
 
 In a %%bash (or other non-Python) cell, put the directive on a line of its own.\
 """

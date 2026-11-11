@@ -104,7 +104,9 @@ def parse_directives(source: str) -> Directives:
         # A bare keyword is an instruction; a keyword followed by anything is
         # a sentence that happens to start with that word. Otherwise
         # `# tts: done training the model` would be silently swallowed as
-        # `final` and never spoken.
+        # `final` and never spoken. The one exception is a leading `say`, which
+        # is always dropped, so that a sentence which is a keyword (`say done`)
+        # can still be spoken.
         keyword = first if len(words) == 1 else ""
         if first == "say":
             found.message = _unquote(" ".join(words[1:])) or None

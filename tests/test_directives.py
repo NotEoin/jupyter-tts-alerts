@@ -122,3 +122,8 @@ def test_a_non_python_cell_body_honours_a_directive_on_its_own_line():
     """The documented limit: in such a body, only a line of its own is seen."""
     assert parse_directives("%%bash\necho It\\'s done\n# tts: off").quiet is True
     assert parse_directives("%%bash\necho It's done  # tts: off").quiet is False
+
+
+def test_say_lets_a_keyword_be_spoken_as_the_sentence():
+    found = parse_directives("# tts: say done\nwork()")
+    assert (found.message, found.final) == ("done", False)

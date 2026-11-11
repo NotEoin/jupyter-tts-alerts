@@ -96,6 +96,10 @@ Put any of these in a comment, anywhere in a cell, on its own line or after code
 long it took. The tags from the original script, `# noannounce` and `# notebook-complete`, still
 work exactly as they did.
 
+To say a sentence that is itself a keyword, put `say` in front: `# tts: say done` says "done"
+rather than marking the last cell. A leading `say` is always dropped, so `# tts: say say cheese`
+says "say cheese".
+
 In a cell magic whose body is not Python, such as `%%bash`, put the directive on a line of
 its own. If the body has a quote Python cannot pair (`It's`), a directive after code is not seen.
 
