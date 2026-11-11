@@ -192,16 +192,13 @@ class EspeakEngine(Engine):
         return found
 
     def default_voices(self) -> Tuple[Optional[str], Optional[str]]:
-        # espeak's +mN / +fN variants are built in, so this works even when
-        # the voice listing cannot be read.
-        base = "en"
-        for candidate in self.voices():
-            if candidate == "en":
-                break
-            if candidate.startswith("en"):
-                base = candidate
-                break
-        return f"{base}+m3", f"{base}+f3"
+        # Always "en", never the first English entry in the voice listing.
+        # On espeak-ng 1.52.0 that entry is "en-gb", which names a language
+        # rather than a voice file, and selecting by language silently drops
+        # the +variant: "en-gb+m3" and "en-gb+f3" render identical audio
+        # (checked 2026-10-20). "en" is a voice file, so both variants apply,
+        # and since +mN / +fN are built in this needs no listing at all.
+        return "en+m3", "en+f3"
 
 
 class SpdSayEngine(Engine):

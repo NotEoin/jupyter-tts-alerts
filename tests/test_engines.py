@@ -1,6 +1,8 @@
 """Command lines and voice discovery for each speech engine."""
 
 import platform
+import shutil
+import subprocess
 
 import pytest
 
@@ -158,9 +160,17 @@ def test_espeak_parses_a_voice_listing(monkeypatch):
     engine = EspeakEngine("espeak-ng")
     monkeypatch.setattr(engine, "_probe", lambda args: listing)
     assert engine.voices() == ["en-gb", "en-us"]
-    normal, alert = engine.default_voices()
-    assert (normal, alert) == ("en-gb+m3", "en-gb+f3")
-    assert normal != alert
+
+
+def test_espeak_default_voices_ignore_a_language_only_listing(monkeypatch):
+    """Regression: "en-gb+m3" and "en-gb+f3" sounded identical on espeak-ng 1.52."""
+    listing = (
+        "Pty Language Age/Gender VoiceName          File          Other Languages\n"
+        " 2  en-gb          M  English_(Great_Britain) gmw/en\n"
+    )
+    engine = EspeakEngine("espeak-ng")
+    monkeypatch.setattr(engine, "_probe", lambda args: listing)
+    assert engine.default_voices() == ("en+m3", "en+f3")
 
 
 def test_espeak_falls_back_when_it_cannot_list_voices(monkeypatch):
@@ -168,6 +178,19 @@ def test_espeak_falls_back_when_it_cannot_list_voices(monkeypatch):
     monkeypatch.setattr(engine, "_probe", lambda args: "")
     normal, alert = engine.default_voices()
     assert (normal, alert) == ("en+m3", "en+f3")
+
+
+@pytest.mark.skipif(shutil.which("espeak-ng") is None, reason="espeak-ng is not installed")
+def test_the_default_espeak_voices_really_sound_different():
+    """Renders to stdout, so nothing is played; only the audio is compared."""
+    engine = EspeakEngine(shutil.which("espeak-ng"))
+    rendered = []
+    for voice in engine.default_voices():
+        argv = engine.speak_command("Error in cell 8.", voice, 50, 0).argv
+        argv.insert(1, "--stdout")
+        rendered.append(subprocess.run(argv, capture_output=True, timeout=30).stdout)
+    assert rendered[0] and rendered[1]
+    assert rendered[0] != rendered[1]
 
 
 def test_say_parses_names_containing_spaces(monkeypatch):
