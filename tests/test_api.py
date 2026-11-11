@@ -318,3 +318,15 @@ def test_load_ext_after_import_keeps_the_notebook_stopwatch(shell):
     assert second.notebook_start == started
     assert api.is_enabled(shell) is True
     api.disable(shell)
+
+
+@pytest.mark.parametrize("magics", [["reload_ext"], ["unload_ext", "load_ext"]])
+def test_reloading_the_extension_leaves_announcements_on(shell, magics):
+    """Regression: unloading flipped the master switch, so the reload was silent."""
+    api.disable(shell)
+    configure(enabled=True)
+    shell.run_line_magic("load_ext", "jupyter_tts_alerts")
+    for magic in magics:
+        shell.run_line_magic(magic, "jupyter_tts_alerts")
+    assert api.is_enabled(shell) is True
+    api.disable(shell)

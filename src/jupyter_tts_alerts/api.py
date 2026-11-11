@@ -85,13 +85,22 @@ def enable(shell: Any = None, banner: Optional[bool] = None,
 
 def disable(shell: Any = None) -> None:
     """Stop announcing and unhook from IPython. ``enable()`` puts it back."""
+    unhook(shell)
+    get_config().enabled = False
+
+
+def unhook(shell: Any = None) -> None:
+    """Detach from IPython and drop queued speech, leaving the on/off switch alone.
+
+    What ``%unload_ext`` does, so that ``%reload_ext`` comes back the way a
+    fresh ``%load_ext`` would, rather than hooked in but switched off.
+    """
     announcer = get_announcer(shell)
     if announcer is not None:
         announcer.detach()
     shell = _find_shell(shell)
     if shell is not None and getattr(shell, _ATTR, None) is not None:
         delattr(shell, _ATTR)
-    get_config().enabled = False
     get_speaker().cancel()
 
 
@@ -283,6 +292,7 @@ __all__ = [
     "say",
     "status",
     "test",
+    "unhook",
     "voices",
     "wait",
 ]

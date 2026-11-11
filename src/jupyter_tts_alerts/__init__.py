@@ -37,6 +37,7 @@ from .api import (
     say,
     status,
     test,
+    unhook,
     voices,
     wait,
 )
@@ -71,6 +72,7 @@ __all__ = [
     "say",
     "status",
     "test",
+    "unhook",
     "unload_ipython_extension",
     "voices",
     "wait",
@@ -90,8 +92,11 @@ def load_ipython_extension(ipython: Any) -> None:
 
 
 def unload_ipython_extension(ipython: Any) -> None:
-    """Support ``%unload_ext jupyter_tts_alerts``."""
-    disable(ipython)
+    """Support ``%unload_ext jupyter_tts_alerts``.
+
+    Only unhooks: ``%tts off`` or ``disable()`` is how you switch it off.
+    """
+    unhook(ipython)
 
 
 def _autostart() -> None:
