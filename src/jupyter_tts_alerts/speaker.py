@@ -296,23 +296,26 @@ class Speaker:
             self._reap(process)
             return
 
+        cancelled = False
         try:
             process.communicate(input=command.stdin, timeout=timeout)
         except subprocess.TimeoutExpired:
             self._warn(f"{command.argv[0]!r} timed out and was stopped")
         finally:
             with self._lock:
-                if self._process is process:
+                # cancel() takes the process away from us before stopping it.
+                cancelled = self._process is not process
+                if not cancelled:
                     self._process = None
             # Every exit path, not just the timeout: an exception out of
             # communicate() would otherwise leave the child running, unreaped
             # and -- if it reads stdin -- blocked on a pipe nobody will close.
             killed = self._reap(process)
 
-        # A process we killed ourselves has a nonzero status by definition;
-        # reporting that as a failure of the command would be blaming it for
-        # something we did, and the timeout has already been reported.
-        if command.warn_on_failure and process.returncode and not killed:
+        # A process we stopped ourselves, by a timeout or a cancel(), has a
+        # nonzero status by definition; reporting that as a failure of the
+        # command would be blaming it for something we did.
+        if command.warn_on_failure and process.returncode and not (killed or cancelled):
             self._warn(
                 f"{command.argv[0]!r} exited with status {process.returncode}"
             )

@@ -12,6 +12,7 @@ import os
 import subprocess
 import sys
 import textwrap
+import time
 
 import pytest
 
@@ -318,3 +319,23 @@ def test_autostart_off_hooks_nothing_up(shim):
     result = run_probe(shim, JUPYTER_TTS_AUTOSTART="0")
     assert result["ATTACHED"] == "False"
     assert result["SPOKEN"] == []
+
+
+def test_cancelling_a_command_that_reports_failures_reports_nothing(capsys):
+    """Regression: cancel() terminating a notification was blamed on the notifier."""
+
+    class Loud(SleepEngine):
+        def speak_command(self, text, voice, volume, rate):
+            return super().speak_command(text, voice, volume, rate)._replace(
+                warn_on_failure=True
+            )
+
+    talker = Speaker(engine=Loud(30))
+    talker.speak("interrupted on purpose")
+    deadline = time.monotonic() + 20
+    while talker._process is None and time.monotonic() < deadline:
+        time.sleep(0.05)
+    talker.cancel()
+    assert talker.wait(20) is True
+    assert "exited with status" not in capsys.readouterr().err
+    talker.close(timeout=5)
