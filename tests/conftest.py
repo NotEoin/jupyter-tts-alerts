@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import sys
+
 import pytest
 
 from helpers import FakeSpeaker
@@ -73,3 +75,26 @@ def spoken(monkeypatch):
         lambda text, alert=False: said.append((text, alert)) or True,
     )
     return said
+
+
+SHIM = "#!/bin/sh\nprintf '%s\\n' \"$*\" >> \"$JTTS_SHIM_LOG\"\n"
+
+
+@pytest.fixture
+def shim(tmp_path):
+    """A fake espeak-ng on PATH that records what it was asked to say.
+
+    Patching `speak` in-process cannot test the import sequence: by the time
+    the patch is installed the import being tested has already finished. The
+    only faithful observer is the engine itself.
+    """
+    if sys.platform.startswith("win"):
+        pytest.skip("shell shims are not executable on Windows")
+    directory = tmp_path / "bin"
+    directory.mkdir()
+    binary = directory / "espeak-ng"
+    binary.write_text(SHIM)
+    binary.chmod(0o755)
+    log = tmp_path / "spoken.log"
+    log.write_text("")
+    return directory, log
