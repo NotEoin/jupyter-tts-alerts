@@ -62,6 +62,7 @@ dev = [
     "jupyter-tts-alerts[test]",
     "build>=1.0",
     "twine>=7.0",        # 6.x rejects the Metadata-Version 2.5 hatchling now emits
+    "mypy>=1.10",
 ]
 
 [project.urls]

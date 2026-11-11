@@ -206,8 +206,9 @@ for epoch in range(100):
 ## Development
 
 ```bash
-pip install -e ".[test]"
+pip install -e ".[dev]"
 pytest
+mypy src/jupyter_tts_alerts
 ```
 
 The suite never makes a sound: speech is pinned to a null engine and the announcement path is driven

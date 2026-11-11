@@ -57,6 +57,12 @@ jobs:
       - name: Check metadata
         run: twine check --strict dist/*
 
+      - name: Type-check
+        # The wheel ships py.typed, so its annotations are a promise to users.
+        run: |
+          pip install -e ".[dev]"
+          mypy src/jupyter_tts_alerts
+
       - name: Confirm it installs and imports with nothing else present
         run: |
           python -m venv /tmp/clean
