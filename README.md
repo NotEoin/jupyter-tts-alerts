@@ -196,8 +196,12 @@ for epoch in range(100):
   writing to your registry, neither of which a `pip install` should be doing. Borrowing
   PowerShell's own ID is what the established toast libraries do; the toast says PowerShell rather
   than Jupyter.
-- **`# tts: final` measures from when alerts started**, not from kernel start. That is normally the same
-  thing, since you import at the top. `%tts reset` restarts the clock.
+- **A batch run can end before everything is said.** Under `jupyter nbconvert --execute` or
+  papermill the kernel exits straight after the last cell. The sentence being spoken finishes, and
+  of the lines still waiting only the newest is kept (the crash, or the notebook's total). On
+  Windows, ipykernel stops every child process at shutdown, so even that sentence is cut short.
+- **`# tts: final` measures from when alerts started**, not from kernel start. That is normally
+  the same thing, since you import at the top. `%tts reset` restarts the clock.
 
 ## Development
 

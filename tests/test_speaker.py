@@ -269,3 +269,21 @@ def test_settings_in_force_when_speaking_are_the_ones_used(monkeypatch, log):
     configure(voice="second")
     _, job = talker._queue.get_nowait()
     assert "first" in " ".join(job().argv)
+
+
+def test_closing_keeps_only_the_newest_waiting_line(monkeypatch, log):
+    """Regression: a batch run's closing crash waited behind older lines and was lost."""
+    import threading
+
+    talker = Speaker(engine=RecordingEngine(log))
+    monkeypatch.setattr(talker, "_ensure_thread", lambda: None)
+    for line in ("stale 1", "stale 2", "the crash"):
+        talker.speak(line)
+    busy = threading.Event()
+    talker._thread = threading.Thread(target=busy.wait, daemon=True)  # alive, not draining
+    talker._thread.start()
+    talker.close(timeout=0.1)
+    busy.set()
+    waiting = [talker._queue.get_nowait() for _ in range(talker._queue.qsize())]
+    assert waiting[-1] is None
+    assert [job().argv[-1] for _, job in waiting[:-1]] == ["normal:the crash"]

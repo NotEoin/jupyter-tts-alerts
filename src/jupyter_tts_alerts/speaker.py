@@ -207,12 +207,18 @@ class Speaker:
             )
 
     def close(self, timeout: float = SHUTDOWN_GRACE) -> None:
-        """Finish the current sentence, then retire the worker thread."""
+        """Finish the current sentence and the newest waiting one, then retire.
+
+        Only the newest: at shutdown the grace period is short, and a batch
+        run ends on its most important line (the notebook's total, or the
+        crash), which older lines would otherwise use the time up before.
+        """
         if self._closed:
             return
         self._closed = True
         thread = self._thread
         if thread is not None and thread.is_alive():
+            self._keep_newest()
             try:
                 self._queue.put_nowait(None)
             except queue.Full:
@@ -224,6 +230,18 @@ class Speaker:
             thread.join(timeout)
 
     # -- plumbing --
+    def _keep_newest(self) -> None:
+        """Discard every waiting job except the most recent one."""
+        newest = None
+        while True:
+            try:
+                newest = self._queue.get_nowait()
+            except queue.Empty:
+                break
+            self._queue.task_done()
+        if newest is not None:
+            self._queue.put_nowait(newest)
+
     def _submit(self, command: Job) -> bool:
         if self._closed:
             return False

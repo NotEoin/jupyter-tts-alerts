@@ -48,8 +48,8 @@ def run_notebook(path, drain=False):
     """Execute *path* in a fresh python3 kernel and return it with its outputs.
 
     Skips the calling test when no python3 kernelspec is installed. *drain*
-    appends a silent cell that waits for queued speech, because kernel
-    shutdown kills a speech process still running from the last cell.
+    appends a silent cell that waits for queued speech, because at kernel
+    shutdown only the newest line still waiting is kept.
     """
     from jupyter_client.kernelspec import NoSuchKernel
 
