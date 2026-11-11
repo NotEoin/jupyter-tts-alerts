@@ -96,6 +96,9 @@ Put any of these in a comment, anywhere in a cell, on its own line or after code
 long it took. The tags from the original script, `# noannounce` and `# notebook-complete`, still
 work exactly as they did.
 
+In a cell magic whose body is not Python, such as `%%bash`, put the directive on a line of
+its own. If the body has a quote Python cannot pair (`It's`), a directive after code is not seen.
+
 A directive is only a directive in a real comment, so a `# tts:` line inside a docstring or a
 string of generated code is left alone. And a keyword only counts on its own: `# tts: done` ends
 the notebook, while `# tts: done training the model` is a sentence that happens to start with it.
