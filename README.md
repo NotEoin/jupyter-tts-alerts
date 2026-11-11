@@ -110,7 +110,7 @@ configure(min_seconds=60, volume=80, notify=True)
 
 | Setting | Default | What it does |
 |---|---|---|
-| `enabled` | `True` | Master switch; `say()` obeys it too |
+| `enabled` | `True` | Master switch; `say()` and `test()` obey it too |
 | `min_seconds` | `5.0` | Seconds before a successful cell is announced |
 | `min_error_seconds` | `0.0` | Raise this if you'd rather typos didn't announce themselves |
 | `announce_start` | `True` | Say something when alerts are switched on |

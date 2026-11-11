@@ -330,3 +330,15 @@ def test_reloading_the_extension_leaves_announcements_on(shell, magics):
         shell.run_line_magic(magic, "jupyter_tts_alerts")
     assert api.is_enabled(shell) is True
     api.disable(shell)
+
+
+def test_test_honours_the_master_switch(spoken, monkeypatch, capsys):
+    """Regression: `%tts test` talked on a machine set to JUPYTER_TTS_ENABLED=0."""
+    from jupyter_tts_alerts.speaker import get_speaker
+
+    notified = []
+    monkeypatch.setattr(get_speaker(), "notify", lambda *a, **k: notified.append(a) or True)
+    configure(enabled=False, notify=True)
+    api.test()
+    assert spoken == [] and notified == []
+    assert "announcements are off" in capsys.readouterr().out

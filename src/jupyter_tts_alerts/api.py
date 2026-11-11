@@ -147,7 +147,13 @@ def voices() -> List[str]:
 
 
 def test() -> "Status":
-    """Say a line in each voice so you can check both are audible."""
+    """Say a line in each voice so you can check both are audible.
+
+    Like ``say()``, stays silent while the master switch is off.
+    """
+    if not get_config().enabled:
+        print("jupyter-tts-alerts: announcements are off; run %tts on (or enable()) first")
+        return status()
     speaker = get_speaker()
     if speaker.engine is None:
         print(speaker.engine_error or missing_engine_hint())
