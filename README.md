@@ -101,7 +101,8 @@ rather than marking the last cell. A leading `say` is always dropped, so `# tts:
 says "say cheese".
 
 In a cell magic whose body is not Python, such as `%%bash`, put the directive on a line of
-its own. If the body has a quote Python cannot pair (`It's`), a directive after code is not seen.
+its own. If the body has a quote Python cannot pair (`It's`), a directive after code is not seen
+on Python 3.12 and later.
 
 A directive is only a directive in a real comment, so a `# tts:` line inside a docstring or a
 string of generated code is left alone. And a keyword only counts on its own: `# tts: done` ends

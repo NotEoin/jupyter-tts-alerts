@@ -119,9 +119,9 @@ def test_empty_source_is_safe():
 
 
 def test_a_non_python_cell_body_honours_a_directive_on_its_own_line():
-    """The documented limit: in such a body, only a line of its own is seen."""
-    assert parse_directives("%%bash\necho It\\'s done\n# tts: off").quiet is True
-    assert parse_directives("%%bash\necho It's done  # tts: off").quiet is False
+    """What the docs promise on every Python. A directive after the code is seen
+    on 3.10 and 3.11, whose tokenizer steps over the stray quote, and not from 3.12."""
+    assert parse_directives("%%bash\necho It's done\n# tts: off").quiet is True
 
 
 def test_say_lets_a_keyword_be_spoken_as_the_sentence():
